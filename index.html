@@ -8,7 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Billabong&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body {
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -16,7 +21,13 @@
             color: #333;
             -webkit-text-size-adjust: 100%;
             touch-action: manipulation;
-            height: 100vh;
+            height: 100%;
+            width: 100%;
+            position: fixed;
+            overflow: hidden;
+        }
+
+        body {
             display: flex;
             flex-direction: column;
         }
@@ -28,6 +39,7 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
         }
 
         h1 {
@@ -52,6 +64,7 @@
             background-color: #007BFF;
             width: 100%;
             margin: 1.6px 0;
+            flex-shrink: 0;
         }
 
         .button-container {
@@ -60,6 +73,8 @@
             padding: 5px 0;
             overflow-x: auto;
             white-space: nowrap;
+            flex-shrink: 0;
+            -webkit-overflow-scrolling: touch;
         }
 
         .button {
@@ -104,6 +119,7 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
+            -webkit-overflow-scrolling: touch;
         }
 
         .message {
@@ -175,6 +191,10 @@
             background-color: white;
             box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
             align-items: center;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 100;
+            width: 100%;
         }
 
         .message-input {
@@ -186,6 +206,7 @@
             font-size: 0.85em;
             outline: none;
             transition: border-color 0.3s;
+            -webkit-appearance: none;
         }
 
         .message-input:focus {
@@ -235,6 +256,8 @@
             white-space: nowrap;
             margin-bottom: 5px;
             background-color: #f9f9f9;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
         }
 
         .question-pill {
@@ -251,6 +274,25 @@
 
         .question-pill:hover {
             background-color: #d1d1d6;
+        }
+
+        /* Fix for iOS safe areas */
+        @supports (padding: max(0px)) {
+            body {
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+                padding-top: max(0px, env(safe-area-inset-top));
+            }
+            
+            .input-container {
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* iPhone specific fix */
+        @media screen and (device-width: 414px) and (device-height: 896px) {
+            .input-container {
+                padding-bottom: 20px;
+            }
         }
     </style>
 </head>
@@ -346,6 +388,31 @@
         const sendButton = document.getElementById('sendButton');
         const voiceButton = document.getElementById('voiceButton');
         const questionPills = document.querySelectorAll('.question-pill');
+
+        // Fix for iOS viewport issues
+        function fixIOSViewport() {
+            // Force redraw to fix iOS height calculation issues
+            document.body.style.display = 'none';
+            document.body.offsetHeight; // Trigger a reflow
+            document.body.style.display = '';
+            
+            // Set height for iOS
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+            
+            // Ensure the input is visible when focused on iOS
+            messageInput.addEventListener('focus', function() {
+                // Small delay to let the keyboard appear
+                setTimeout(function() {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    window.scrollTo(0, 0);
+                }, 300);
+            });
+        }
+
+        // Call the fix
+        fixIOSViewport();
+        window.addEventListener('resize', fixIOSViewport);
 
         // Function to add a message
         function addMessage(message, isUser) {
